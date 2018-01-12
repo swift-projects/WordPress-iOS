@@ -100,7 +100,6 @@ class SiteIconPickerPresenter: NSObject {
                     }
                     mediaService.createMedia(with: image,
                                              objectID: blogId,
-                                             progress: nil,
                                              thumbnailCallback: nil,
                                              completion: { (media, error) in
                         guard let media = media, error == nil else {

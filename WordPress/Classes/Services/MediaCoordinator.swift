@@ -32,43 +32,16 @@ class MediaCoordinator: NSObject {
     /// - parameter blog: The blog that the asset should be added to.
     ///
     func addMedia(from asset: ExportableAsset, to blog: Blog) {
-        guard let asset = asset as? PHAsset else {
-            return
-        }
-        mediaProgressCoordinator.track(numberOfItems: 1)
         let service = MediaService(managedObjectContext: backgroundContext)
-        let totalProgress = Progress.discreteProgress(totalUnitCount: MediaExportProgressUnits.done)
-        var creationProgress: Progress? = nil
-        let media = service.createMedia(with: asset,
+        service.createMedia(with: asset,
                             objectID: blog.objectID,
-                            progress: &creationProgress,
                             thumbnailCallback: nil,
                             completion: { [weak self] media, error in
-                                guard let strongSelf = self else {
-                                    return
-                                }
-                                if let error = error {
-                                    if let media = media {
-                                        strongSelf.mediaProgressCoordinator.attach(error: error as NSError, toMediaID: media.uploadID)
-                                        strongSelf.fail(media)
-                                    } else {
-                                        // If there was an error and we don't have a media object we just say to the coordinator that one item was finished
-                                        strongSelf.mediaProgressCoordinator.finishOneItem()
-                                    }
-                                    return
-                                }
                                 guard let media = media, !media.isDeleted else {
                                     return
                                 }
-
-                                let uploadProgress = strongSelf.uploadMedia(media)
-                                totalProgress.addChild(uploadProgress, withPendingUnitCount: MediaExportProgressUnits.threeQuartersDone)
+                                self?.uploadMedia(media)
         })
-        begin(media)
-        if let creationProgress = creationProgress {
-            totalProgress.addChild(creationProgress, withPendingUnitCount: MediaExportProgressUnits.quarterDone)
-            mediaProgressCoordinator.track(progress: totalProgress, of: media, withIdentifier: media.uploadID)
-        }
     }
 
     func retryMedia(_ media: Media) {
@@ -76,8 +49,7 @@ class MediaCoordinator: NSObject {
             DDLogError("Can't retry Media upload that hasn't failed. \(String(describing: media))")
             return
         }
-        mediaProgressCoordinator.track(numberOfItems: 1)
-        begin(media)
+
         uploadMedia(media)
     }
 
@@ -107,7 +79,11 @@ class MediaCoordinator: NSObject {
         service.delete(media, success: nil, failure: nil)
     }
 
-    @discardableResult private func uploadMedia(_ media: Media) -> Progress {
+    private func uploadMedia(_ media: Media) {
+        mediaProgressCoordinator.track(numberOfItems: 1)
+
+        begin(media)
+
         let service = MediaService(managedObjectContext: backgroundContext)
 
         var progress: Progress? = nil
@@ -122,9 +98,7 @@ class MediaCoordinator: NSObject {
             self.fail(media)
         })
         if let taskProgress = progress {
-            return taskProgress
-        } else {
-            return Progress.discreteCompletedProgress()
+            self.mediaProgressCoordinator.track(progress: taskProgress, of: media, withIdentifier: media.uploadID)
         }
     }
 
@@ -238,7 +212,7 @@ class MediaCoordinator: NSObject {
         notifyObserversForMedia(media, ofStateChange: .failed)
     }
 
-    /// Notifies observers that a media item is in progress.
+    /// Notifies observers that a media item has ended uploading.
     ///
     func progress(_ value: Double, media: Media) {
         notifyObserversForMedia(media, ofStateChange: .progress(value: value))
@@ -282,7 +256,7 @@ extension MediaCoordinator: MediaProgressCoordinatorDelegate {
             guard let media = mediaProgressCoordinator.media(withIdentifier: mediaID) else {
                 continue
             }
-            if media.remoteStatus == .pushing || media.remoteStatus == .processing {
+            if media.remoteStatus == .pushing {
                 progress(mediaProgress.fractionCompleted, media: media)
             }
         }

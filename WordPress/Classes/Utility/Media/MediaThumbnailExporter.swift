@@ -132,12 +132,12 @@ class MediaThumbnailExporter: MediaExporter {
         self.url = url
     }
 
-    public func export(onCompletion: @escaping OnMediaExport, onError: @escaping OnExportError) -> Progress {
+    public func export(onCompletion: @escaping OnMediaExport, onError: @escaping OnExportError) {
         guard let fileURL = url else {
-            onError(exporterErrorWith(error: ThumbnailExportError.failedToGenerateThumbnailFileURL))
-            return Progress.discreteCompletedProgress()
+            onError(ThumbnailExportError.failedToGenerateThumbnailFileURL)
+            return
         }
-        return exportThumbnail(forFile: fileURL, onCompletion: { (identifier, export) in
+        exportThumbnail(forFile: fileURL, onCompletion: { (identifier, export) in
             onCompletion(export)
         }, onError: onError)
     }
@@ -146,39 +146,38 @@ class MediaThumbnailExporter: MediaExporter {
     ///
     /// - Note: GIFs are currently unsupported and throw the .gifThumbnailsUnsupported error.
     ///
-    @discardableResult func exportThumbnail(forFile url: URL, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) -> Progress {
+    func exportThumbnail(forFile url: URL, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) {
         do {
             let expected = try MediaURLExporter.expectedExport(with: url)
             switch expected {
             case .image, .gif:
-                return exportImageThumbnail(at: url, onCompletion: onCompletion, onError: onError)
+                exportImageThumbnail(at: url, onCompletion: onCompletion, onError: onError)
             case .video:
-                return exportVideoThumbnail(at: url, onCompletion: onCompletion, onError: onError)
+                exportVideoThumbnail(at: url, onCompletion: onCompletion, onError: onError)
             }
         } catch {
             onError(exporterErrorWith(error: error))
-            return Progress.discreteCompletedProgress()
         }
     }
 
     /// Export an existing image as a thumbnail image, based on the exporter options.
     ///
-    @discardableResult func exportThumbnail(forImage image: UIImage, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) -> Progress {
+    func exportThumbnail(forImage image: UIImage, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) {
         let exporter = MediaImageExporter(image: image, filename: UUID().uuidString)
         exporter.mediaDirectoryType = .cache
         exporter.options = imageExporterOptions
-        return exporter.export(onCompletion: { (export) in
+        exporter.export(onCompletion: { (export) in
                                 self.exportImageToThumbnailCache(export, onCompletion: onCompletion, onError: onError)
         }, onError: onError)
     }
 
     /// Export a known video at the URL, being either a file URL or a remote URL.
     ///
-    @discardableResult func exportThumbnail(forVideoURL url: URL, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) -> Progress {
+    func exportThumbnail(forVideoURL url: URL, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) {
         if url.isFileURL {
-            return exportThumbnail(forFile: url, onCompletion: onCompletion, onError: onError)
+            exportThumbnail(forFile: url, onCompletion: onCompletion, onError: onError)
         } else {
-            return exportVideoThumbnail(at: url, onCompletion: onCompletion, onError: onError)
+            exportVideoThumbnail(at: url, onCompletion: onCompletion, onError: onError)
         }
     }
 
@@ -186,11 +185,11 @@ class MediaThumbnailExporter: MediaExporter {
 
     /// Export a thumbnail for a known image at the URL, using self.options for ImageExporter options.
     ///
-    @discardableResult fileprivate func exportImageThumbnail(at url: URL, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) -> Progress {
+    fileprivate func exportImageThumbnail(at url: URL, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) {
         let exporter = MediaImageExporter(url: url)
         exporter.mediaDirectoryType = .temporary
         exporter.options = imageExporterOptions
-        return exporter.export(onCompletion: { (export) in
+        exporter.export(onCompletion: { (export) in
             self.exportImageToThumbnailCache(export, onCompletion: onCompletion, onError: onError)
         },
                         onError: onError)
@@ -198,10 +197,10 @@ class MediaThumbnailExporter: MediaExporter {
 
     /// Export a thumbnail for a known video at the URL, using self.options for ImageExporter options.
     ///
-    @discardableResult fileprivate func exportVideoThumbnail(at url: URL, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) -> Progress {
-        let exporter = MediaVideoExporter(url: url)
+    fileprivate func exportVideoThumbnail(at url: URL, onCompletion: @escaping OnThumbnailExport, onError: @escaping OnExportError) {
+        let exporter = MediaVideoExporter()
         exporter.mediaDirectoryType = .temporary
-        return exporter.exportPreviewImageForVideo(atURL: url,
+        exporter.exportPreviewImageForVideo(atURL: url,
                                             imageOptions: imageExporterOptions,
                                             onCompletion: { (export) in
                                                 self.exportImageToThumbnailCache(export, onCompletion: onCompletion, onError: onError)

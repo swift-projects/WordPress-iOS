@@ -32,22 +32,18 @@ open class MediaImportService: LocalCoreDataService {
 
     /// Imports media from a PHAsset to the Media object, asynchronously.
     ///
-    /// - Parameters:
-    ///     - exportable: the exportable resource where data will be read from.
-    ///     - media: the media object to where media will be imported to.
-    ///     - onCompletion: Called if the Media was successfully created and the asset's data imported to the absoluteLocalURL.
-    ///     - onError: Called if an error was encountered during creation, error convertible to NSError with a localized description.
-    ///
-    /// - Returns: a progress object that report the current state of the import process.
+    /// - parameter exportable: the exportable resource where data will be read from.
+    /// - parameter media: the media object to where media will be imported to.
+    /// - parameter onCompletion: Called if the Media was successfully created and the asset's data imported to the absoluteLocalURL.
+    /// - parameter onError: Called if an error was encountered during creation, error convertible to NSError with a localized description.
     ///
     @objc(importResource:toMedia:onCompletion:onError:)
-    func `import`(_ exportable: ExportableAsset, to media: Media, onCompletion: @escaping MediaCompletion, onError: @escaping OnError) -> Progress? {
-        let progress: Progress = Progress.discreteProgress(totalUnitCount: 1)
+    func `import`(_ exportable: ExportableAsset, to media: Media, onCompletion: @escaping MediaCompletion, onError: @escaping OnError) {
         importQueue.async {
             guard let exporter = self.makeExporter(for: exportable) else {
                 preconditionFailure("An exporter needs to be availale")
             }
-            let exportProgress = exporter.export(onCompletion: { export in
+            exporter.export(onCompletion: { export in
                 self.managedObjectContext.perform {
                     self.configureMedia(media, withExport: export)
                     ContextManager.sharedInstance().save(self.managedObjectContext, withCompletionBlock: {
@@ -58,9 +54,7 @@ open class MediaImportService: LocalCoreDataService {
                 self.handleExportError(mediaExportError, errorHandler: onError)
             }
             )
-            progress.addChild(exportProgress, withPendingUnitCount: 1)
         }
-        return progress
     }
 
     func makeExporter(for exportable: ExportableAsset) -> MediaExporter? {
