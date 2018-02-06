@@ -56,7 +56,7 @@ target 'WordPress' do
   pod 'Gridicons', '0.14'
   pod 'NSURL+IDN', '0.3'
   pod 'WPMediaPicker', '0.26'
-  pod 'WordPress-Aztec-iOS', '1.0.0-beta.18.1'
+  pod 'WordPress-Aztec-iOS', :git => 'https://github.com/wordpress-mobile/AztecEditor-iOS.git', :commit => 'c35a746c471adcca7c09a0c56a1422e3eb08508e'
 
   target 'WordPressTest' do
     inherit! :search_paths
@@ -73,7 +73,7 @@ target 'WordPress' do
     shared_with_all_pods
     shared_with_networking_pods
 
-    pod 'WordPress-Aztec-iOS', '1.0.0-beta.18.1'
+  	pod 'WordPress-Aztec-iOS', :git => 'https://github.com/wordpress-mobile/AztecEditor-iOS.git', :commit => 'c35a746c471adcca7c09a0c56a1422e3eb08508e'
   end
 
   target 'WordPressTodayWidget' do
