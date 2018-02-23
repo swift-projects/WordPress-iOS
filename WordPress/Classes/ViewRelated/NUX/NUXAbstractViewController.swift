@@ -6,7 +6,7 @@ protocol LoginWithLogoAndHelpViewController {
     func addWordPressLogoToNavController()
     func handleHelpButtonTapped(_ sender: AnyObject)
     func displaySupportViewController(from source: WordPressSupportSourceTag)
-    func handleHelpshiftUnreadCountUpdated(_ notification: Foundation.Notification)
+    func refreshBadgeCount(_ notification: Foundation.Notification)
 }
 
 extension LoginWithLogoAndHelpViewController where Self: UIViewController {
@@ -19,11 +19,11 @@ extension LoginWithLogoAndHelpViewController where Self: UIViewController {
     /// Displays the support vc.
     ///
     func displaySupportViewController(from source: WordPressSupportSourceTag) {
-        guard let supportViewController = WordPressAuthenticator.shared.delegate?.supportViewController(from: source) else {
+        guard let navigationController = navigationController else {
             fatalError()
         }
 
-        navigationController?.present(supportViewController, animated: true, completion: nil)
+        WordPressAuthenticator.shared.delegate?.presentSupport(from: navigationController, sourceTag: source, options: [:])
     }
 }
 
@@ -93,7 +93,7 @@ class NUXAbstractViewController: UIViewController, NUXSegueHandler, LoginWithLog
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        HelpshiftUtils.refreshUnreadNotificationCount()
+        WordPressAuthenticator.shared.delegate?.refreshSupportBadgeCount()
     }
 
 
@@ -144,7 +144,7 @@ class NUXAbstractViewController: UIViewController, NUXSegueHandler, LoginWithLog
     /// - Note: this is only used in the old single-page signup screen and can be removed once that screen is gone.
     ///
     private func setupHelpButtonAndBadge() {
-        NotificationCenter.default.addObserver(self, selector: #selector(NUXAbstractViewController.handleHelpshiftUnreadCountUpdated(_:)), name: NSNotification.Name.HelpshiftUnreadCountUpdated, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(NUXAbstractViewController.refreshBadgeCount(_:)), name: .wordpressSupportBadgeUpdated, object: nil)
 
         let customView = UIView(frame: helpButtonContainerFrame)
 
@@ -256,8 +256,8 @@ class NUXAbstractViewController: UIViewController, NUXSegueHandler, LoginWithLog
 
     /// Updates the badge count and its visibility.
     ///
-    @objc func handleHelpshiftUnreadCountUpdated(_ notification: Foundation.Notification) {
-        let count = HelpshiftUtils.unreadNotificationCount()
+    @objc func refreshBadgeCount(_ notification: Foundation.Notification) {
+        let count = WordPressAuthenticator.shared.delegate?.supportBadgeCount ?? 0
         helpBadge.text = "\(count)"
         helpBadge.isHidden = (count == 0)
     }
