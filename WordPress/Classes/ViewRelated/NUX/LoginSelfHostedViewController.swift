@@ -236,9 +236,13 @@ class LoginSelfHostedViewController: LoginViewController, NUXKeyboardResponder {
 
     /// Advances to the epilogue view controller once the self-hosted site has been added.
     ///
-    @objc func showEpilogue() {
+    func showEpilogue() {
         configureViewLoading(false)
-        performSegue(withIdentifier: .showEpilogue, sender: self)
+        guard let delegate = WordPressAuthenticator.shared.delegate, let navigationController = navigationController else {
+            fatalError()
+        }
+
+        delegate.presentEpilogue(in: navigationController)
     }
 
 
@@ -353,15 +357,16 @@ extension LoginSelfHostedViewController {
     func finishedLogin(withUsername username: String, password: String, xmlrpc: String, options: [AnyHashable: Any]) {
         displayLoginMessage("")
 
-        BlogSyncFacade().syncBlog(withUsername: username, password: password, xmlrpc: xmlrpc, options: options) { [weak self] blog in
+        guard let delegate = WordPressAuthenticator.shared.delegate else {
+            fatalError()
+        }
 
-            RecentSitesService().touch(blog: blog)
-            NotificationCenter.default.post(name: Foundation.Notification.Name(rawValue: WordPressAuthenticator.WPSigninDidFinishNotification), object: nil)
+        let name = Foundation.Notification.Name(rawValue: WordPressAuthenticator.WPSigninDidFinishNotification)
+        NotificationCenter.default.post(name: name, object: nil)
 
-            self?.blog = blog
-            self?.fetchUserProfileInfo(blog: blog, completion: {
-                self?.showEpilogue()
-            })
+        delegate.syncSelfHosted(username: username, password: password, xmlrpc: xmlrpc, options: options) { [weak self] in
+
+            self?.showEpilogue()
         }
     }
 
