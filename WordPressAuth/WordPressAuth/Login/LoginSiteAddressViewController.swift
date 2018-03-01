@@ -135,7 +135,7 @@ class LoginSiteAddressViewController: LoginViewController, NUXKeyboardResponder 
     @objc func validateForm() {
         view.endEditing(true)
         displayError(message: "")
-        guard WordPressAuthenticator.validateSiteForSignin(loginFields) else {
+        guard loginFields.validateSiteForSignin() else {
             assertionFailure("Form should not be submitted unless there is a valid looking URL entered.")
             return
         }
@@ -149,34 +149,34 @@ class LoginSiteAddressViewController: LoginViewController, NUXKeyboardResponder 
             }
             self?.fetchSiteInfo()
 
-        }, failure: { [weak self] (error) in
-            guard let error = error, let strongSelf = self else {
-                return
-            }
-            NSLog(error.localizedDescription)
-            WordPressAuthenticator.post(event: .loginFailedToGuessXMLRPC(error: error))
-            WordPressAuthenticator.post(event: .loginFailed(error: error))
-            strongSelf.configureViewLoading(false)
+            }, failure: { [weak self] (error) in
+                guard let error = error, let strongSelf = self else {
+                    return
+                }
+                NSLog(error.localizedDescription)
+                WordPressAuthenticator.post(event: .loginFailedToGuessXMLRPC(error: error))
+                WordPressAuthenticator.post(event: .loginFailed(error: error))
+                strongSelf.configureViewLoading(false)
 
-            let err = strongSelf.originalErrorOrError(error: error as NSError)
-            if strongSelf.errorDiscoveringJetpackSite(error: err) {
-                strongSelf.displayError(error as NSError, sourceTag: .jetpackLogin)
+                let err = strongSelf.originalErrorOrError(error: error as NSError)
+                if strongSelf.errorDiscoveringJetpackSite(error: err) {
+                    strongSelf.displayError(error as NSError, sourceTag: .jetpackLogin)
 
-            } else if (err.domain == NSURLErrorDomain && err.code == NSURLErrorCannotFindHost) ||
-                (err.domain == NSURLErrorDomain && err.code == NSURLErrorNetworkConnectionLost) {
-                // NSURLErrorNetworkConnectionLost can be returned when an invalid URL is entered.
-                let msg = NSLocalizedString("Hmm, it doesn't look like there's a WordPress site at this URL. Double-check the spelling and try again.",
-                                            comment: "Error message shown a URL does not point to an existing site.")
-                strongSelf.displayError(message: msg)
+                } else if (err.domain == NSURLErrorDomain && err.code == NSURLErrorCannotFindHost) ||
+                    (err.domain == NSURLErrorDomain && err.code == NSURLErrorNetworkConnectionLost) {
+                    // NSURLErrorNetworkConnectionLost can be returned when an invalid URL is entered.
+                    let msg = NSLocalizedString("Hmm, it doesn't look like there's a WordPress site at this URL. Double-check the spelling and try again.",
+                                                comment: "Error message shown a URL does not point to an existing site.")
+                    strongSelf.displayError(message: msg)
 
-            } else if err.domain == "WordPressKit.WordPressOrgXMLRPCValidatorError" && err.code == WordPressOrgXMLRPCValidatorError.invalid.rawValue {
-                let msg = NSLocalizedString("We're sure this is a great site - but it's not a WordPress site, so you can't connect to it with this app.",
-                                            comment: "Error message shown a URL points to a valid site but not a WordPress site.")
-                strongSelf.displayError(message: msg)
+                } else if err.domain == "WordPressKit.WordPressOrgXMLRPCValidatorError" && err.code == WordPressOrgXMLRPCValidatorError.invalid.rawValue {
+                    let msg = NSLocalizedString("We're sure this is a great site - but it's not a WordPress site, so you can't connect to it with this app.",
+                                                comment: "Error message shown a URL points to a valid site but not a WordPress site.")
+                    strongSelf.displayError(message: msg)
 
-            } else {
-                strongSelf.displayError(error as NSError, sourceTag: strongSelf.sourceTag)
-            }
+                } else {
+                    strongSelf.displayError(error as NSError, sourceTag: strongSelf.sourceTag)
+                }
         })
     }
 
@@ -189,8 +189,8 @@ class LoginSiteAddressViewController: LoginViewController, NUXKeyboardResponder 
             service.fetchSiteInfo(forAddress: siteAddress, success: { [weak self] (siteInfo) in
                 self?.loginFields.meta.siteInfo = siteInfo
                 self?.showSelfHostedUsernamePassword()
-            }, failure: { [weak self] (error) in
-                self?.showSelfHostedUsernamePassword()
+                }, failure: { [weak self] (error) in
+                    self?.showSelfHostedUsernamePassword()
             })
 
         } else {
@@ -225,7 +225,7 @@ class LoginSiteAddressViewController: LoginViewController, NUXKeyboardResponder 
     /// Whether the form can be submitted.
     ///
     @objc func canSubmit() -> Bool {
-        return WordPressAuthenticator.validateSiteForSignin(loginFields)
+        return loginFields.validateSiteForSignin()
     }
 
 
@@ -268,3 +268,4 @@ class LoginSiteAddressViewController: LoginViewController, NUXKeyboardResponder 
         keyboardWillHide(notification)
     }
 }
+

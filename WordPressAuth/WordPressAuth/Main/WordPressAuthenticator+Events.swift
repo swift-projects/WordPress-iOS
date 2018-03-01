@@ -38,6 +38,8 @@ public extension WordPressAuthenticator {
         case onePasswordLogin
         case openedLogin
         case signupMagicLinkOpenEmailClientViewed
+        case signupMagicLinkOpened
+        case signupMagicLinkSucceeded
         case signedIn(properties: [String: String])
         case twoFactorCodeRequested
     }
@@ -54,3 +56,4 @@ extension WordPressAuthenticator {
         NotificationCenter.default.post(name: .wordpressAuthenticationFlowEvent, object: event)
     }
 }
+

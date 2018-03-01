@@ -10,8 +10,4 @@ class BlogService {
     func fetchSiteInfo(forAddress: String, success: (SiteInfo) -> Void, failure: (Error) -> Void) {
         
     }
-
-    func findBlog(withXmlrpc: String, andUsername: String) -> Blog? {
-        return nil
-    }
 }
