@@ -91,4 +91,25 @@ extension WordPressAuthenticationManager: WordPressAuthenticatorDelegate {
                                                                        refreshUserDetails: true,
                                                                        completion: nil)
     }
+
+    ///
+    ///
+    func syncSelfHosted(username: String, password: String, xmlrpc: String, options: [AnyHashable: Any], completion: @escaping () -> ()) {
+        BlogSyncFacade().syncBlog(withUsername: username, password: password, xmlrpc: xmlrpc, options: options) { blog in
+
+            RecentSitesService().touch(blog: blog)
+            completion()
+        }
+    }
+
+    ///
+    ///
+    func presentEpilogue(in navigationController: UINavigationController) {
+        let storyboard = UIStoryboard(name: "LoginEpilogue", bundle: .main)
+        guard let epilogueViewController = storyboard.instantiateInitialViewController() else {
+            fatalError()
+        }
+
+        navigationController.pushViewController(epilogueViewController, animated: true)
+    }
 }

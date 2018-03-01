@@ -38,6 +38,14 @@ public protocol WordPressAuthenticatorDelegate: class {
     /// such as all of the User's Login details.
     ///
     func presentLivechat(from sourceViewController: UIViewController, sourceTag: WordPressSupportSourceTag, options: [String: Any])
+
+    ///
+    ///
+    func syncSelfHosted(username: String, password: String, xmlrpc: String, options: [AnyHashable: Any], completion: @escaping () -> ())
+
+    ///
+    ///
+    func presentEpilogue(in navigationController: UINavigationController)
 }
 
 
